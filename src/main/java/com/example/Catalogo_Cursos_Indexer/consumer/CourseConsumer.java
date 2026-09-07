@@ -3,22 +3,11 @@ package com.example.Catalogo_Cursos_Indexer.consumer;
 import com.example.Catalogo_Cursos_Indexer.event.CourseCreatedEvent;
 import com.example.Catalogo_Cursos_Indexer.service.IndexingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-/**
- * Consume eventos de Course publicados por Debezium Outbox Event Router.
- *
- * Topic:
- *
- * catalog.course.events
- *
- * El consumer no realiza I/O contra Elasticsearch.
- * Delega el procesamiento al IndexingService.
- */
 @Component
 public class CourseConsumer {
 
@@ -30,6 +19,7 @@ public class CourseConsumer {
   public CourseConsumer(
       IndexingService indexingService,
       ObjectMapper objectMapper) {
+
     this.indexingService = indexingService;
     this.objectMapper = objectMapper;
   }
@@ -54,8 +44,7 @@ public class CourseConsumer {
     } catch (Exception e) {
 
       log.error(
-          "Error deserializando o procesando evento Course. " +
-              "Payload: {}",
+          "Error deserializando o procesando evento Course. Payload: {}",
           payload,
           e);
 
@@ -75,6 +64,7 @@ public class CourseConsumer {
     String trimmed = payload.trim();
 
     if (trimmed.startsWith("\"")) {
+
       return objectMapper.readValue(
           trimmed,
           String.class);
