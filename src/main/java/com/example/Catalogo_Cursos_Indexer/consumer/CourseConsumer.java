@@ -1,10 +1,14 @@
 package com.example.Catalogo_Cursos_Indexer.consumer;
 
 import com.example.Catalogo_Cursos_Indexer.event.CourseCreatedEvent;
+import com.example.Catalogo_Cursos_Indexer.event.course.CourseUpdateEvent;
 import com.example.Catalogo_Cursos_Indexer.service.IndexingService;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -31,15 +35,49 @@ public class CourseConsumer {
 
       String normalizedPayload = normalize(payload);
 
-      CourseCreatedEvent event = objectMapper.readValue(
-          normalizedPayload,
-          CourseCreatedEvent.class);
+      JsonNode json = objectMapper.readTree(normalizedPayload);
+
+      String eventType = json.path("eventType").asText();
 
       log.debug(
-          "Evento Course recibido: courseId={}",
-          event.courseId());
+          "Evento Course recibido: eventType={}",
+          eventType);
 
-      indexingService.handleCourseCreated(event);
+      switch (eventType) {
+
+        case "COURSE_CREATED" -> {
+
+          CourseCreatedEvent event = objectMapper.treeToValue(
+              json,
+              CourseCreatedEvent.class);
+
+          log.info(
+              "Procesando CourseCreatedEvent: courseId={}",
+              event.courseId());
+
+          indexingService.handleCourseCreated(event);
+        }
+
+        case "COURSE_UPDATED" -> {
+
+          CourseUpdateEvent event = objectMapper.treeToValue(
+              json,
+              CourseUpdateEvent.class);
+
+          log.info(
+              "Procesando CourseUpdateEvent: courseId={}",
+              event.courseId());
+
+          indexingService.handleCourseUpdated(event);
+        }
+
+        default -> {
+
+          log.warn(
+              "Evento Course no soportado: eventType={}",
+              eventType);
+        }
+      }
 
     } catch (Exception e) {
 
@@ -49,7 +87,7 @@ public class CourseConsumer {
           e);
 
       throw new RuntimeException(
-          "Fallo procesando CourseCreatedEvent",
+          "Fallo procesando evento Course",
           e);
     }
   }

@@ -5,10 +5,12 @@ import com.example.Catalogo_Cursos_Indexer.event.CourseCategoryCreatedEvent;
 import com.example.Catalogo_Cursos_Indexer.event.CourseCreatedEvent;
 import com.example.Catalogo_Cursos_Indexer.event.CourseLocationCreatedEvent;
 import com.example.Catalogo_Cursos_Indexer.event.CourseScheduleCreatedEvent;
+import com.example.Catalogo_Cursos_Indexer.event.course.CourseUpdateEvent;
 import com.example.Catalogo_Cursos_Indexer.mapper.CourseCategoryDocumentMapper;
 import com.example.Catalogo_Cursos_Indexer.mapper.CourseDocumentMapper;
 import com.example.Catalogo_Cursos_Indexer.mapper.CourseLocationDocumentMapper;
 import com.example.Catalogo_Cursos_Indexer.mapper.CourseScheduleDocumentMapper;
+
 import org.springframework.stereotype.Service;
 
 /**
@@ -57,6 +59,7 @@ public class IndexingService {
       CourseCategoryDocumentMapper courseCategoryDocumentMapper,
       CourseLocationDocumentMapper courseLocationDocumentMapper,
       CourseScheduleDocumentMapper courseScheduleDocumentMapper) {
+
     this.batchProcessor = batchProcessor;
     this.courseDocumentMapper = courseDocumentMapper;
     this.courseCategoryDocumentMapper = courseCategoryDocumentMapper;
@@ -65,10 +68,25 @@ public class IndexingService {
   }
 
   /**
-   * Procesa un evento de creación/actualización de curso.
+   * Procesa un evento de creación de curso.
    */
   public void handleCourseCreated(
       CourseCreatedEvent event) {
+
+    batchProcessor.accumulateCourse(
+        courseDocumentMapper.toDocument(event));
+  }
+
+  /**
+   * Procesa un evento de actualización de curso.
+   *
+   * El evento contiene el snapshot completo del curso.
+   *
+   * El mismo courseId debe utilizarse como ID
+   * del documento de Elasticsearch.
+   */
+  public void handleCourseUpdated(
+      CourseUpdateEvent event) {
 
     batchProcessor.accumulateCourse(
         courseDocumentMapper.toDocument(event));
