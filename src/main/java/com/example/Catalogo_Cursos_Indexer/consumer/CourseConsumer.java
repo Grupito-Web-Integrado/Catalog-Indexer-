@@ -3,9 +3,9 @@ package com.example.Catalogo_Cursos_Indexer.consumer;
 import com.example.Catalogo_Cursos_Indexer.event.CourseCreatedEvent;
 import com.example.Catalogo_Cursos_Indexer.event.course.CourseUpdateEvent;
 import com.example.Catalogo_Cursos_Indexer.service.IndexingService;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,26 +29,31 @@ public class CourseConsumer {
   }
 
   @KafkaListener(topics = "${catalog-indexer.kafka.topics.course:catalog.COURSE.events}", groupId = "${catalog-indexer.kafka.group-id:catalog-search-indexer}")
-  public void onMessage(String payload) {
+  public void onMessage(
+      ConsumerRecord<String, String> record) {
 
     try {
 
-      String normalizedPayload = normalize(payload);
+      String payload = record.value();
 
-      JsonNode json = objectMapper.readTree(normalizedPayload);
-
-      String eventType = json.path("eventType").asText();
+      String eventType = getHeader(
+          record,
+          "eventType");
 
       log.debug(
-          "Evento Course recibido: eventType={}",
-          eventType);
+          "Evento Course recibido: eventType={}, eventId={}, key={}",
+          eventType,
+          getHeader(record, "eventId"),
+          record.key());
+
+      String normalizedPayload = normalize(payload);
 
       switch (eventType) {
 
         case "COURSE_CREATED" -> {
 
-          CourseCreatedEvent event = objectMapper.treeToValue(
-              json,
+          CourseCreatedEvent event = objectMapper.readValue(
+              normalizedPayload,
               CourseCreatedEvent.class);
 
           log.info(
@@ -60,8 +65,8 @@ public class CourseConsumer {
 
         case "COURSE_UPDATED" -> {
 
-          CourseUpdateEvent event = objectMapper.treeToValue(
-              json,
+          CourseUpdateEvent event = objectMapper.readValue(
+              normalizedPayload,
               CourseUpdateEvent.class);
 
           log.info(
@@ -82,14 +87,33 @@ public class CourseConsumer {
     } catch (Exception e) {
 
       log.error(
-          "Error deserializando o procesando evento Course. Payload: {}",
-          payload,
+          "Error deserializando o procesando evento Course. " +
+              "topic={}, partition={}, offset={}, payload={}",
+          record.topic(),
+          record.partition(),
+          record.offset(),
+          record.value(),
           e);
 
       throw new RuntimeException(
           "Fallo procesando evento Course",
           e);
     }
+  }
+
+  private String getHeader(
+      ConsumerRecord<String, String> record,
+      String headerName) {
+
+    var header = record.headers().lastHeader(headerName);
+
+    if (header == null) {
+      return null;
+    }
+
+    return new String(
+        header.value(),
+        java.nio.charset.StandardCharsets.UTF_8);
   }
 
   private String normalize(String payload)

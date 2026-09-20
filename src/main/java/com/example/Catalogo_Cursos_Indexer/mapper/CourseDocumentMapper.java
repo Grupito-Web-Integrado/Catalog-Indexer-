@@ -41,6 +41,7 @@ public class CourseDocumentMapper {
         event.price(),
         event.currency(),
         event.modality(),
+        null,
         event.startDate(),
         event.endDate(),
         event.startTime(),
@@ -83,6 +84,7 @@ public class CourseDocumentMapper {
         event.price(),
         event.currency(),
         event.modality(),
+        event.imageKey(),
         event.startDate(),
         event.endDate(),
         event.startTime(),
@@ -91,12 +93,12 @@ public class CourseDocumentMapper {
         event.availableSlots(),
         event.description(),
 
-        // El documento conserva la fecha original de creación.
-        // Si CourseUpdateEvent todavía no transporta createdAt,
-        // no podemos reconstruirla desde el evento de actualización.
+        // Actualmente CourseUpdateEvent no contiene createdAt.
+        // Se recomienda agregarlo posteriormente para conservar
+        // la fecha original de creación del curso.
         null,
 
-        // Fecha real de actualización del agregado.
+        // Fecha de la última actualización del curso.
         event.updatedAt());
   }
 }
